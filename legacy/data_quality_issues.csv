@@ -1,0 +1,69 @@
+record_id,issue_type,description
+TX-01-0022,DUPLICATE,Duplicate record_id detected
+TX-01-0040,DUPLICATE,Duplicate record_id detected
+TX-02-0043,DUPLICATE,Duplicate record_id detected
+TX-03-0014,DUPLICATE,Duplicate record_id detected
+TX-03-0071,DUPLICATE,Duplicate record_id detected
+TX-04-0030,DUPLICATE,Duplicate record_id detected
+TX-05-0053,DUPLICATE,Duplicate record_id detected
+TX-06-0010,DUPLICATE,Duplicate record_id detected
+TX-07-0016,DUPLICATE,Duplicate record_id detected
+TX-07-0024,DUPLICATE,Duplicate record_id detected
+TX-07-0040,DUPLICATE,Duplicate record_id detected
+TX-07-0049,DUPLICATE,Duplicate record_id detected
+TX-08-0041,DUPLICATE,Duplicate record_id detected
+TX-08-0078,DUPLICATE,Duplicate record_id detected
+TX-09-0040,DUPLICATE,Duplicate record_id detected
+TX-09-0051,DUPLICATE,Duplicate record_id detected
+TX-09-0052,DUPLICATE,Duplicate record_id detected
+TX-10-0026,DUPLICATE,Duplicate record_id detected
+TX-11-0035,DUPLICATE,Duplicate record_id detected
+TX-11-0079,DUPLICATE,Duplicate record_id detected
+TX-12-0066,DUPLICATE,Duplicate record_id detected
+TX-08-0041,DUPLICATE,Duplicate record_id detected
+TX-07-0016,DUPLICATE,Duplicate record_id detected
+TX-08-0078,DUPLICATE,Duplicate record_id detected
+TX-11-0035,DUPLICATE,Duplicate record_id detected
+TX-09-0051,DUPLICATE,Duplicate record_id detected
+TX-09-0040,DUPLICATE,Duplicate record_id detected
+TX-09-0052,DUPLICATE,Duplicate record_id detected
+TX-01-0040,DUPLICATE,Duplicate record_id detected
+TX-12-0066,DUPLICATE,Duplicate record_id detected
+TX-04-0030,DUPLICATE,Duplicate record_id detected
+TX-07-0040,DUPLICATE,Duplicate record_id detected
+TX-01-0022,DUPLICATE,Duplicate record_id detected
+TX-05-0053,DUPLICATE,Duplicate record_id detected
+TX-03-0014,DUPLICATE,Duplicate record_id detected
+TX-10-0026,DUPLICATE,Duplicate record_id detected
+TX-11-0079,DUPLICATE,Duplicate record_id detected
+TX-03-0071,DUPLICATE,Duplicate record_id detected
+TX-02-0043,DUPLICATE,Duplicate record_id detected
+TX-06-0010,DUPLICATE,Duplicate record_id detected
+TX-07-0049,DUPLICATE,Duplicate record_id detected
+TX-07-0024,DUPLICATE,Duplicate record_id detected
+TX-03-0060,MISSING_VENDOR,Vendor name is missing
+TX-05-0029,MISSING_VENDOR,Vendor name is missing
+TX-08-0056,MISSING_VENDOR,Vendor name is missing
+TX-10-0011,MISSING_VENDOR,Vendor name is missing
+TX-10-0026,MISSING_VENDOR,Vendor name is missing
+TX-11-0011,MISSING_VENDOR,Vendor name is missing
+TX-11-0027,MISSING_VENDOR,Vendor name is missing
+TX-11-0030,MISSING_VENDOR,Vendor name is missing
+TX-12-0022,MISSING_VENDOR,Vendor name is missing
+TX-12-0023,MISSING_VENDOR,Vendor name is missing
+TX-03-0020,INVALID_AMOUNT,total_amount < net_amount
+TX-03-0084,INVALID_AMOUNT,total_amount < net_amount
+TX-04-0051,INVALID_AMOUNT,total_amount < net_amount
+TX-06-0012,INVALID_AMOUNT,total_amount < net_amount
+TX-06-0046,INVALID_AMOUNT,total_amount < net_amount
+TX-06-0077,INVALID_AMOUNT,total_amount < net_amount
+TX-09-0054,INVALID_AMOUNT,total_amount < net_amount
+TX-02-0039,NEGATIVE_AMOUNT,Negative total amount
+TX-03-0020,NEGATIVE_AMOUNT,Negative total amount
+TX-03-0084,NEGATIVE_AMOUNT,Negative total amount
+TX-04-0051,NEGATIVE_AMOUNT,Negative total amount
+TX-06-0012,NEGATIVE_AMOUNT,Negative total amount
+TX-06-0046,NEGATIVE_AMOUNT,Negative total amount
+TX-06-0077,NEGATIVE_AMOUNT,Negative total amount
+TX-08-0037,NEGATIVE_AMOUNT,Negative total amount
+TX-09-0054,NEGATIVE_AMOUNT,Negative total amount
