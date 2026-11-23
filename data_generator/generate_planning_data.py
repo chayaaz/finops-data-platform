@@ -50,15 +50,10 @@ def _load_raw_transactions() -> list[dict]:
     return rows
 
 
-# Budgets are tightened year over year, so the company-wide view moves from comfortable
-# (2023) to close to the limit (2025) and every overall status can be demonstrated.
-BUDGET_TIGHTENING_BY_YEAR = {"2023": 1.0, "2024": 0.88, "2025": 0.8}
-
-
 def generate_budgets() -> None:
     """Set each cost-center/category/month budget relative to its actual spend, in the
-    owning entity's base currency, so Budget-vs-Actual shows every status: most categories
-    have comfortable headroom, some run close to the limit, and some overspend."""
+    owning entity's base currency. The company as a whole stays comfortably within budget,
+    while a minority of categories run close to the limit or overspend."""
     rows = _load_raw_transactions()
     currency_by_entity = {e["name"]: e["base_currency"] for e in BUSINESS_ENTITIES}
 
@@ -75,7 +70,7 @@ def generate_budgets() -> None:
 
     # Each category gets one budgeting profile per year, so whole categories show up as
     # healthy, tight or overspending rather than the differences averaging out. The value
-    # is budget as a multiple of actual spend: 1.4x is ~71% used, 1.12x ~89%, 0.92x ~109%.
+    # is budget as a multiple of actual spend: 1.7x is ~59% used, 1.12x ~89%, 0.92x ~109%.
     profile_by_category_year: dict[tuple[str, str], float] = {}
 
     budget_rows = []
@@ -85,12 +80,8 @@ def generate_budgets() -> None:
             continue
         profile_key = (category, period[:4])
         if profile_key not in profile_by_category_year:
-            profile_by_category_year[profile_key] = random.choices([1.4, 1.12, 0.92], weights=[55, 28, 17])[0]
-        variance_factor = (
-            profile_by_category_year[profile_key]
-            * BUDGET_TIGHTENING_BY_YEAR.get(period[:4], 1.0)
-            * random.uniform(0.9, 1.1)
-        )
+            profile_by_category_year[profile_key] = random.choices([1.7, 1.12, 0.92], weights=[62, 24, 14])[0]
+        variance_factor = profile_by_category_year[profile_key] * random.uniform(0.9, 1.1)
         budget_amount = round(actual * variance_factor, 2)
         budget_rows.append({
             "cost_center_code": cost_center,
