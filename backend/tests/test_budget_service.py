@@ -1,6 +1,7 @@
 from datetime import date
 
 from app.models.budget import Budget
+from app.models.fx import ExchangeRate
 from app.services import budget_service
 
 
@@ -81,3 +82,47 @@ def test_burn_down_accumulates_across_months(db_session, cost_center, category, 
     assert points[0]["cumulative_actual"] == 80
     assert points[1]["cumulative_budget"] == 200
     assert points[1]["cumulative_actual"] == 170
+
+
+def test_budget_vs_actual_converts_foreign_currency_budgets_to_base(
+    db_session, cost_center, category, make_clean_transaction
+):
+    # A budget of 3,000 ILS at 0.25 USD/ILS is 750 USD; actual spend is already in USD.
+    db_session.add(ExchangeRate(rate_date=date(2025, 6, 1), currency_code="ILS", rate_to_base=0.25))
+    db_session.add(
+        Budget(cost_center_id=cost_center.id, category_id=category.id, period_month=date(2025, 6, 1), currency="ILS", budget_amount=3000)
+    )
+    db_session.flush()
+    make_clean_transaction(
+        cost_center_id=cost_center.id,
+        category_id=category.id,
+        transaction_date=date(2025, 6, 15),
+        total_amount_base_currency=900,
+    )
+
+    row = budget_service.budget_vs_actual(db_session, date(2025, 6, 1), date(2025, 6, 30))[0]
+
+    assert row["budget_amount"] == 750
+    assert row["actual_amount"] == 900
+    assert row["is_over_budget"] is True
+
+
+def test_period_bounds_cover_a_full_year_or_one_quarter():
+    assert budget_service.period_bounds(2025) == (date(2025, 1, 1), date(2025, 12, 31))
+    assert budget_service.period_bounds(2025, 1) == (date(2025, 1, 1), date(2025, 3, 31))
+    assert budget_service.period_bounds(2024, 1) == (date(2024, 1, 1), date(2024, 3, 31))
+    assert budget_service.period_bounds(2025, 2) == (date(2025, 4, 1), date(2025, 6, 30))
+    assert budget_service.period_bounds(2025, 4) == (date(2025, 10, 1), date(2025, 12, 31))
+
+
+def test_burn_down_for_a_quarter_only_includes_its_months(db_session, cost_center, category, make_clean_transaction):
+    for month in (3, 4, 5, 7):
+        db_session.add(
+            Budget(cost_center_id=cost_center.id, category_id=category.id, period_month=date(2025, month, 1), currency="USD", budget_amount=100)
+        )
+    db_session.flush()
+
+    points = budget_service.burn_down(db_session, 2025, quarter=2)
+
+    assert [p["period_month"] for p in points] == [date(2025, 4, 1), date(2025, 5, 1)]
+    assert points[-1]["cumulative_budget"] == 200

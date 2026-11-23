@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -49,8 +49,9 @@ def burn_down(
     _user=Depends(get_current_user),
     cost_center_id: int | None = None,
     category_id: int | None = None,
+    quarter: int | None = Query(default=None, ge=1, le=4),
 ) -> list[BurnDownPoint]:
-    return budget_service.burn_down(db, year, cost_center_id, category_id)
+    return budget_service.burn_down(db, year, cost_center_id, category_id, quarter)
 
 
 @router.post("", response_model=BudgetRead)

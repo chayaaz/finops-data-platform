@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.budget import Budget
 from app.models.ingestion import CleanTransaction
+from app.services import fx_service
 
 
 def budget_vs_actual(
@@ -18,6 +19,7 @@ def budget_vs_actual(
         Budget.cost_center_id,
         Budget.category_id,
         Budget.period_month,
+        Budget.currency,
         func.sum(Budget.budget_amount).label("budget_amount"),
     ).filter(Budget.period_month.between(period_start, period_end))
 
@@ -26,7 +28,9 @@ def budget_vs_actual(
     if category_id is not None:
         budget_query = budget_query.filter(Budget.category_id == category_id)
 
-    budget_query = budget_query.group_by(Budget.cost_center_id, Budget.category_id, Budget.period_month)
+    budget_query = budget_query.group_by(
+        Budget.cost_center_id, Budget.category_id, Budget.period_month, Budget.currency
+    )
 
     actual_query = (
         db.query(
@@ -52,16 +56,26 @@ def budget_vs_actual(
         for cc_id, cat_id, period, amount in actual_query.all()
     }
 
-    results = []
-    seen_keys = set()
-    for cc_id, cat_id, period_month, budget_amount in budget_query.all():
+    # Budgets are kept in each entity's own currency while actuals are already in the base
+    # currency, so each budget is converted at the rate in effect for its month before comparing.
+    rate_cache: dict[tuple[str, date], float | None] = {}
+    budgets: dict[tuple, float] = {}
+    for cc_id, cat_id, period_month, currency, budget_amount in budget_query.all():
+        rate_key = (currency, period_month)
+        if rate_key not in rate_cache:
+            rate_cache[rate_key] = fx_service.get_rate_to_base(db, currency, period_month)
+        rate = rate_cache[rate_key]
+        if rate is None:
+            continue
         key = (cc_id, cat_id, period_month)
-        seen_keys.add(key)
-        actual_amount = actuals.get(key, 0.0)
-        results.append(_variance_row(cc_id, cat_id, period_month, float(budget_amount), actual_amount))
+        budgets[key] = budgets.get(key, 0.0) + float(budget_amount) * rate
 
+    results = [
+        _variance_row(cc_id, cat_id, period_month, budget_amount, actuals.get((cc_id, cat_id, period_month), 0.0))
+        for (cc_id, cat_id, period_month), budget_amount in budgets.items()
+    ]
     for (cc_id, cat_id, period_month), actual_amount in actuals.items():
-        if (cc_id, cat_id, period_month) not in seen_keys:
+        if (cc_id, cat_id, period_month) not in budgets:
             results.append(_variance_row(cc_id, cat_id, period_month, 0.0, actual_amount))
 
     return sorted(results, key=lambda r: (r["period_month"], r["cost_center_id"] or 0))
@@ -82,8 +96,24 @@ def _variance_row(cc_id: int | None, cat_id: int | None, period_month: date, bud
     }
 
 
-def burn_down(db: Session, year: int, cost_center_id: int | None = None, category_id: int | None = None) -> list[dict]:
-    rows = budget_vs_actual(db, date(year, 1, 1), date(year, 12, 31), cost_center_id, category_id)
+def period_bounds(year: int, quarter: int | None = None) -> tuple[date, date]:
+    """First and last day of a calendar year, or of one quarter (1-4) within it."""
+    if quarter is None:
+        return date(year, 1, 1), date(year, 12, 31)
+    first_month = 3 * (quarter - 1) + 1
+    last_day = date(year + 1, 1, 1) if quarter == 4 else date(year, first_month + 3, 1)
+    return date(year, first_month, 1), date.fromordinal(last_day.toordinal() - 1)
+
+
+def burn_down(
+    db: Session,
+    year: int,
+    cost_center_id: int | None = None,
+    category_id: int | None = None,
+    quarter: int | None = None,
+) -> list[dict]:
+    period_start, period_end = period_bounds(year, quarter)
+    rows = budget_vs_actual(db, period_start, period_end, cost_center_id, category_id)
 
     by_month: dict[date, dict] = {}
     for row in rows:
