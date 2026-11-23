@@ -51,10 +51,18 @@ def update_user(
     if target.role == UserRole.ADMIN and payload.is_active is False:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Admin accounts cannot be disabled")
 
+    # Prevents an admin from locking themselves out by demoting their own account.
+    if target.id == admin.id and payload.role is not None and payload.role != target.role:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot change your own role")
+
+    previous_role = target.role
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(target, field, value)
 
-    log_action(db, admin.id, "user_updated", "user", str(user_id))
+    details = None
+    if payload.role is not None and payload.role != previous_role:
+        details = f"role: {previous_role.value} -> {payload.role.value}"
+    log_action(db, admin.id, "user_updated", "user", str(user_id), details=details)
     db.commit()
     db.refresh(target)
     return target

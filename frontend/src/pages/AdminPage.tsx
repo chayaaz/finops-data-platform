@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Spinner, ErrorState, EmptyState } from "@/components/ui/States";
+import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/lib/apiClient";
 import { formatDateTime } from "@/lib/format";
 import { clsx } from "clsx";
 import type { UserRole } from "@/types/api";
@@ -50,7 +52,15 @@ const roleTone: Record<UserRole, "brand" | "positive" | "warn" | "slate"> = {
   auditor: "slate",
 };
 
+const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "admin", label: "Admin" },
+  { value: "finance_manager", label: "Finance Manager" },
+  { value: "analyst", label: "Analyst" },
+  { value: "auditor", label: "Auditor" },
+];
+
 function UsersTab() {
+  const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const users = useQuery({ queryKey: ["admin-users"], queryFn: endpoints.admin.users });
   const [showForm, setShowForm] = useState(false);
@@ -70,8 +80,21 @@ function UsersTab() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
   });
 
+  const changeRole = useMutation({
+    mutationFn: ({ id, role }: { id: number; role: UserRole }) => endpoints.admin.updateUser(id, { role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+    },
+  });
+
   return (
     <div>
+      {changeRole.isError && (
+        <div className="mb-3 rounded-lg bg-negative-50 px-3 py-2 text-sm text-negative-600">
+          {changeRole.error instanceof ApiError ? changeRole.error.message : "Could not change role"}
+        </div>
+      )}
       <div className="mb-3 flex justify-end">
         <Button onClick={() => setShowForm((v) => !v)}>
           <Plus size={15} /> New User
@@ -149,7 +172,26 @@ function UsersTab() {
                   <td className="px-6 py-2.5 font-medium text-slate-800">{u.full_name}</td>
                   <td className="px-2 py-2.5 text-slate-600">{u.email}</td>
                   <td className="px-2 py-2.5">
-                    <Badge tone={roleTone[u.role]}>{u.role.replace("_", " ")}</Badge>
+                    {u.id === currentUser?.id ? (
+                      <span className="flex items-center gap-2">
+                        <Badge tone={roleTone[u.role]}>{u.role.replace("_", " ")}</Badge>
+                        <span className="text-xs text-slate-400">(you)</span>
+                      </span>
+                    ) : (
+                      <select
+                        value={u.role}
+                        disabled={changeRole.isPending}
+                        onChange={(e) => changeRole.mutate({ id: u.id, role: e.target.value as UserRole })}
+                        className="rounded-lg border border-slate-300 px-2 py-1 text-xs outline-none focus:border-brand-500"
+                        aria-label={`Role for ${u.full_name}`}
+                      >
+                        {ROLE_OPTIONS.map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {r.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </td>
                   <td className="px-2 py-2.5">
                     <Badge tone={u.is_active ? "positive" : "negative"}>{u.is_active ? "active" : "disabled"}</Badge>

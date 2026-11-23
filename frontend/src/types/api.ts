@@ -117,6 +117,31 @@ export interface DataQualityIssue {
   resolved_at: string | null;
 }
 
+export interface IssueRawRow {
+  id: number;
+  batch_id: number;
+  record_id: string;
+  transaction_date: string | null;
+  vendor_name: string | null;
+  department: string | null;
+  cost_center: string | null;
+  category: string | null;
+  currency: string | null;
+  net_amount: string | null;
+  tax_amount: string | null;
+  total_amount: string | null;
+  business_entity: string | null;
+  is_accepted: boolean;
+}
+
+export type IssueRowCorrections = Partial<Omit<IssueRawRow, "id" | "batch_id" | "is_accepted">>;
+
+export interface IssueRowFixResult {
+  clean_transaction_id: number;
+  was_added: boolean;
+  remaining_problems: string[];
+}
+
 export interface IssueSummary {
   by_status: Record<string, number>;
   by_severity: Record<string, number>;

@@ -19,7 +19,7 @@ import { formatCompactCurrency, formatCurrency, formatMonth, formatNumber } from
 export function DashboardPage() {
   const kpis = useQuery({ queryKey: ["kpis"], queryFn: endpoints.analytics.kpis });
   const trends = useQuery({ queryKey: ["trends"], queryFn: () => endpoints.analytics.trends() });
-  const issueSummary = useQuery({ queryKey: ["issue-summary"], queryFn: endpoints.issues.summary });
+  const issueSummary = useQuery({ queryKey: ["issue-summary"], queryFn: () => endpoints.issues.summary() });
 
   if (kpis.isLoading) return <Spinner label="Loading dashboard" />;
   if (kpis.isError || !kpis.data) return <ErrorState message="Could not load dashboard KPIs" />;

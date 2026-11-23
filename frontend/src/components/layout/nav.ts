@@ -36,7 +36,7 @@ export const navGroups: NavGroup[] = [
   {
     title: "Data Pipeline",
     items: [
-      { to: "/upload", label: "Upload Data", icon: UploadCloud },
+      { to: "/upload", label: "Upload Data", icon: UploadCloud, roles: ["admin", "finance_manager", "analyst"] },
       { to: "/ingestion", label: "Ingestion Monitor", icon: Gauge },
       { to: "/quality", label: "Data Quality & Issues", icon: ShieldQuestion },
       { to: "/anomalies", label: "Anomaly Detection", icon: Radar },

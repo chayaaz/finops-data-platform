@@ -19,6 +19,9 @@ import type {
   ForecastResult,
   FxExposureRow,
   IngestionBatch,
+  IssueRawRow,
+  IssueRowCorrections,
+  IssueRowFixResult,
   IssueStatus,
   IssueSummary,
   RawTransaction,
@@ -53,8 +56,10 @@ export const endpoints = {
   issues: {
     list: (params: Record<string, string | number | undefined | null> = {}) =>
       api.get<DataQualityIssue[]>("/issues", params),
-    summary: () => api.get<IssueSummary>("/issues/summary"),
+    summary: (batchId?: number) => api.get<IssueSummary>("/issues/summary", { batch_id: batchId }),
     updateStatus: (id: number, status: IssueStatus) => api.patch<DataQualityIssue>(`/issues/${id}`, { status }),
+    rawRow: (id: number) => api.get<IssueRawRow>(`/issues/${id}/raw-row`),
+    fixRow: (id: number, corrections: IssueRowCorrections) => api.post<IssueRowFixResult>(`/issues/${id}/fix`, corrections),
   },
   anomalies: {
     list: (params: Record<string, string | number | undefined | null> = {}) =>

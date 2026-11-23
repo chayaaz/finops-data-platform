@@ -1,15 +1,18 @@
 import { useRef, useState, type DragEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, FileSpreadsheet, UploadCloud, XCircle } from "lucide-react";
+import { CheckCircle2, FileSpreadsheet, ShieldOff, UploadCloud, XCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { endpoints } from "@/lib/endpoints";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/States";
+import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/apiClient";
 import { formatNumber } from "@/lib/format";
 import type { IngestionBatch } from "@/types/api";
 
 export function UploadPage() {
+  const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [result, setResult] = useState<IngestionBatch | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -40,6 +43,17 @@ export function UploadPage() {
     e.preventDefault();
     setDragActive(false);
     handleFile(e.dataTransfer.files?.[0]);
+  }
+
+  if (user?.role === "auditor") {
+    return (
+      <div>
+        <PageHeader title="Upload Data" description="Ingest raw transaction files" />
+        <Card>
+          <EmptyState message="Auditors have read-only access and cannot upload files" icon={ShieldOff} />
+        </Card>
+      </div>
+    );
   }
 
   return (

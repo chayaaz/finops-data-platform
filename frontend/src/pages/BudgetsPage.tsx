@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { endpoints } from "@/lib/endpoints";
 import { useDimensions } from "@/hooks/useDimensions";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Spinner, ErrorState, EmptyState } from "@/components/ui/States";
-import { formatCompactCurrency, formatCurrency, formatMonth, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatMonth, formatNumber, formatPercent } from "@/lib/format";
+import type { BudgetVarianceRow } from "@/types/api";
 
 const YEARS = [2023, 2024, 2025];
 
@@ -66,6 +68,8 @@ export function BudgetsPage() {
           ))}
         </select>
       </div>
+
+      {variance.data && variance.data.length > 0 && <BudgetHealthSummary rows={variance.data} year={year} />}
 
       <Card className="mb-5">
         <CardHeader>
@@ -144,6 +148,91 @@ export function BudgetsPage() {
           </table>
         )}
       </Card>
+    </div>
+  );
+}
+
+// Share of budget used at which the overall status turns from "on track" to "near limit".
+const NEAR_LIMIT_PCT = 90;
+
+const healthStyles = {
+  on_track: { label: "On track", tone: "positive", bar: "bg-positive-500", icon: CheckCircle2, iconClass: "text-positive-600" },
+  near_limit: { label: "Near limit", tone: "warn", bar: "bg-warn-500", icon: AlertTriangle, iconClass: "text-warn-600" },
+  over_budget: { label: "Over budget", tone: "negative", bar: "bg-negative-500", icon: XCircle, iconClass: "text-negative-600" },
+} as const;
+
+function BudgetHealthSummary({ rows, year }: { rows: BudgetVarianceRow[]; year: number }) {
+  const totalBudget = rows.reduce((sum, r) => sum + r.budget_amount, 0);
+  const totalActual = rows.reduce((sum, r) => sum + r.actual_amount, 0);
+  const remaining = totalBudget - totalActual;
+  const usedPct = totalBudget > 0 ? (totalActual / totalBudget) * 100 : null;
+  const overLines = rows.filter((r) => r.is_over_budget).length;
+
+  const health =
+    usedPct === null || usedPct > 100 ? "over_budget" : usedPct >= NEAR_LIMIT_PCT ? "near_limit" : "on_track";
+  const style = healthStyles[health];
+  const Icon = style.icon;
+
+  const headline =
+    health === "over_budget"
+      ? `Spending is ${formatCurrency(Math.abs(remaining))} over the ${year} budget`
+      : `Spending is within the ${year} budget, with ${formatCurrency(remaining)} remaining`;
+
+  return (
+    <Card className="mb-5">
+      <CardBody className="pt-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Icon size={28} className={style.iconClass} />
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Overall status</p>
+                <Badge tone={style.tone}>{style.label}</Badge>
+              </div>
+              <p className="mt-1 text-lg font-bold text-slate-900">{headline}</p>
+              <p className="mt-0.5 text-sm text-slate-500">
+                {formatNumber(overLines)} of {formatNumber(rows.length)} budget lines are over budget
+              </p>
+            </div>
+          </div>
+          {usedPct !== null && (
+            <div className="text-right">
+              <p className="text-2xl font-bold tabular text-slate-900">{formatPercent(usedPct, 1)}</p>
+              <p className="text-xs text-slate-500">of budget used</p>
+            </div>
+          )}
+        </div>
+
+        {usedPct !== null && (
+          <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
+            <div className={`h-full ${style.bar}`} style={{ width: `${Math.min(usedPct, 100)}%` }} />
+          </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <SummaryFigure label="Total budget" value={formatCurrency(totalBudget)} />
+          <SummaryFigure label="Actual spend" value={formatCurrency(totalActual)} />
+          <SummaryFigure
+            label={remaining >= 0 ? "Remaining" : "Overspend"}
+            value={formatCurrency(Math.abs(remaining))}
+            tone={remaining >= 0 ? "text-positive-600" : "text-negative-600"}
+          />
+          <SummaryFigure
+            label="Lines over budget"
+            value={`${formatNumber(overLines)} / ${formatNumber(rows.length)}`}
+            tone={overLines > 0 ? "text-warn-600" : "text-positive-600"}
+          />
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+function SummaryFigure({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="rounded-lg bg-slate-50 p-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className={`mt-0.5 text-base font-semibold tabular ${tone ?? "text-slate-900"}`}>{value}</p>
     </div>
   );
 }
